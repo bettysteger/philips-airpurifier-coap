@@ -58,7 +58,13 @@ class Coordinator:
             self._timer_disconnected.cancel()
 
         if self.client is not None:
-            await self.client.shutdown()
+            try:
+                await self.client.shutdown()
+            except Exception:
+                # aiocoap can raise during shutdown when the connection is
+                # already gone (e.g. AttributeError on _active_exchanges).
+                # Never let this block unloading the config entry.
+                _LOGGER.debug("Ignoring error while shutting down client", exc_info=True)
 
     async def reconnect(self):
         """Reconnect to the API connection."""
